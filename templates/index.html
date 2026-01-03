@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIP Manila Chatbot</title>
+    <link rel="icon" type="image/png" href="/static/tip_logo.png">
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="chat-page">
+    <nav class="navbar">
+        <div class="nav-left">
+            <img src="/static/tip_logo.png" alt="TIP Logo" class="nav-logo">
+            <div class="navbar-text">yui_ai</div>
+        </div>
+        <a href="/about" class="about-btn">About</a>
+    </nav>
+
+
+    <main class="main-content">
+        <aside class="left-side desktop-only">
+            <div class="logo-circle">
+                <img src="/static/tip_logo.png" alt="TIP Logo" class="logo">
+            </div>
+        </aside>
+
+        <section class="chat-wrapper">
+            <div class="glass-container chat-glass">
+                <div class="chat-window" id="chatWindow">
+                    </div>
+                <div class="input-container">
+                    <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+                    <button id="sendBtn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+
+    <script>
+        window.onload = function() {
+            const introMessage = "Hello! I'm the TIP Manila Chatbot. How can I assist you today?";
+            displayMessage(introMessage, 'bot');
+        };
+
+        // Listen for the "Enter" key press to send the message
+        document.getElementById('messageInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();  // Prevents the default "Enter" behavior (new line in the input)
+                sendMessage();
+            }
+        });
+
+        async function sendMessage() {
+            const userMessage = document.getElementById('messageInput').value;
+            if (!userMessage.trim()) {  // Check if the input is empty
+                alert("Please enter a message.");
+                return;
+            }
+
+            // Display the user's message in the chat window
+            displayMessage(userMessage, 'user');
+
+            // Add typing indicator dynamically
+            const chatArea = document.getElementById("chatWindow");
+            const typingDiv = document.createElement("div");
+            typingDiv.classList.add("chatbot-message"); // Chatbot message bubble styling
+            typingDiv.setAttribute("id", "typing-indicator"); // For later removal
+            typingDiv.innerHTML = `
+                <div class="typing-container">
+                <span class="typing-text">yui is thinking ...</span>
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+            `;
+            chatArea.appendChild(typingDiv);
+
+            // Scroll chat window to the bottom
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Send the user message to the Flask backend via POST request
+            const response = await fetch('/get_response', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userMessage })
+            });
+
+            // If the response is successful, display the bot's response
+            if (response.ok) {
+                const data = await response.json();
+                setTimeout(() => {
+                    // Remove typing indicator
+                    document.getElementById("typing-indicator").remove();
+                    // Display the bot's response
+                    displayMessage(data.response, 'bot');
+                }, 1000); // Delay for bot response before removing typing indicator
+            } else {
+                console.error('Error:', response.status);
+                alert('Something went wrong!');
+            }
+        }
+
+        // Display messages in the chat window
+        function displayMessage(message, sender) {
+            const chatWindow = document.getElementById('chatWindow');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('chat-message');
+            messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+
+                // If the sender is the bot, add an image (logo) next to the message
+            if (sender === 'bot') {
+                const botProfilePic = document.createElement('img');
+                botProfilePic.src = '/static/tip_logo.png';  // The path to your logo
+                botProfilePic.alt = 'Bot Profile';
+                botProfilePic.classList.add('bot-profile-pic');  // Add a class for styling
+
+                // Add the profile picture next to the bot message
+                messageDiv.appendChild(botProfilePic);
+            }
+            // Format the message with HTML (links, bold, etc.)
+            const formattedMessage = formatMessage(message);
+
+            messageDiv.innerHTML = formattedMessage;
+            chatWindow.appendChild(messageDiv);
+
+             // Clear the input field
+             document.getElementById('messageInput').value = '';
+
+            // Scroll to the bottom of the chat window
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        function formatMessage(message) {
+            // Replace URLs with clickable links
+            message = message.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">Click here</a>');
+
+            // Make text between double asterisks bold
+            message = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Bold text wrapped in single asterisks (e.g. *Telephone* or *COLLABORATION*)
+            message = message.replace(/\*(.*?)\*/g, '<strong>$1</strong>');
+
+
+            // Highlight specific sections with bold labels
+            const highlightSections = ["Telephone", "Mobile", "Facebook"];
+            highlightSections.forEach(section => {
+                const regex = new RegExp('\\*\\*' + section + '\\*\\*', 'g');
+                message = message.replace(regex, '<br><strong>' + section + ':</strong>');
+            });
+        // Handle bullet points and list items
+        if (message.includes("*")) {
+            // Remove the first asterisk only if it's at the start (to avoid affecting the first word)
+            message = message.replace(/^\*/, '');
+
+            // Split the message into sentences or parts based on the asterisk
+            let parts = message.split('*');
+
+            // Rebuild the message with the first part left as is (not in a <li>) and the rest in <li> tags
+            message = parts[0] + parts.slice(1).map(part => '<li>' + part.trim() + '</li>').join('');
+
+            // Wrap the whole message in <ul>
+            message = '<ul class="indented-list">' + message + '</ul>';
+        }
+
+            // Handle numbered lists (ordered lists) by detecting numbers followed by a period
+        message = message.replace(/^(\d+)\.(.*?)(?=\n|$)/gm, (match, number, content) => {
+            return `<ol>${number}. ${content.trim()}<ol>`;  // Keep the number and wrap the content in <li>
+        });
+
+        // // Remove remaining asterisks
+        message = message.replace(/\*\*/g, '');
+
+        // Additional formatting (e.g., replace double newlines with breaks)
+            message = message.replace(/(\n\n)/g, '<br><br>');
+
+            return message;
+        }
+        function redirectToAboutPage() {
+            window.location.href = "about.html";  // Replace with actual URL if needed
+        }
+        function toggleMenu() {
+    const menu = document.getElementById('navMenu');
+    menu.classList.toggle('active');
+}
+
+// Close menu when clicking outside
+window.onclick = function(event) {
+    if (!event.target.matches('.menu-icon') && !event.target.matches('.menu-icon span')) {
+        const menu = document.getElementById('navMenu');
+        if (menu.classList.contains('active')) {
+            menu.classList.remove('active');
+        }
+    }
+}
+    </script>
+</body>
+</html>
