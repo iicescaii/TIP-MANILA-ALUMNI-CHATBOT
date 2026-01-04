@@ -15,8 +15,7 @@ The **TIP Manila Chatbot** is an AI-powered automated solution designed to assis
 
 ## I. Executive Summary
 
-Originally conceptualized for Google AI Studio, this project has been migrated to the **OpenAI API** to leverage advanced instruction-following capabilities. The chatbot acts as a virtual concierge for the Technological Institute of the Philippines (T.I.P.) Manila, hosted on **OnRender** for constant availability.
-
+The TIP Manila chatbot project provides an interactive, automated solution for answering FAQs regarding undergraduate programs. Developed using the OpenAI API for advanced natural language processing and Visual Studio Code for script development, the chatbot is hosted on OnRender to ensure 24/7 availability for students and parents worldwide.
 ## II. Introduction
 
 ### Background
@@ -32,7 +31,7 @@ Founded in 1962, T.I.P. is a premier technical institution. As the school shifts
 
 ### Project Development Environment
 
-* **OpenAI API (GPT-4o/3.5-Turbo):** The core logic engine used for Natural Language Understanding (NLU).
+* **OpenAI API (GPT-4o-mini):** The core logic engine used for Natural Language Understanding (NLU).
 * **Python/Node.js:** Backend scripts to handle API calls and session management.
 * **Visual Studio Code:** Primary environment for coding the interface.
 * **OnRender:** Deployment platform for the live web application.
